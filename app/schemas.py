@@ -18,6 +18,9 @@ class ApplicationCreate(BaseModel):
     resume_version: Optional[str] = None
     next_follow_up_date: Optional[date] = None
     notes: Optional[str] = None
+
+class StatusUpdate(BaseModel):
+    current_status:  Status
     
 class StatusHistoryResponse(BaseModel):
     id: int
