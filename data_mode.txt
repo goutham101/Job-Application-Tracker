@@ -1,7 +1,0 @@
-Fields Needed:
-Company
-Role
-Status (Applied/ Interviewing/ Rejected/ Offer)
-Date Applied
-Source 
-Referal or not
