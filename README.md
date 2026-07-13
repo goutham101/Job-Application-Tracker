@@ -62,6 +62,18 @@ python -m venv venv && ./venv/bin/pip install -r requirements.txt
 
 Configuration is one env var: `DATABASE_URL` (default `postgresql://localhost/jobtracker`).
 
+### Frontend
+
+A Vite + React dashboard in `frontend/` — an applications table (filters, search, add/delete, stage-event logging with backfill support) and an analytics page (funnel, time-in-stage, response-by-source, current-stage-mix charts with an accessible table fallback for each). No routing library — view switching is a plain `location.hash` listener.
+
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:5173, proxies /applications, /companies, /stats to :8000
+```
+
+Run the API (`uvicorn app.main:app --reload`) alongside it — the dev server proxies API paths to `http://127.0.0.1:8000` (see `frontend/vite.config.js`).
+
 ## Migrations
 
 Numbered plain SQL files in `db/migrations/` (`001_init.sql`, `002_...sql`), applied in order by `db/migrate.py`, which records each file in `schema_migrations` and skips ones already applied. Add a migration by dropping the next-numbered file in the directory and re-running the script. No Alembic — deliberately.
