@@ -48,3 +48,14 @@ def update_status(application_id: int, status_update: schemas.StatusUpdate, db: 
     db.refresh(application)
 
     return application
+
+@app.delete("/applications/{application_id}", status_code = 204)
+def delete_application(application_id: int, db: Session = Depends(get_db)):
+    application = db.query(models.Application).filter(models.Application.id == application_id).first()
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    db.delete(application)
+    db.commit
+    
+    return None 
