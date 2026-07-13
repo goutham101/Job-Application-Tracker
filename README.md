@@ -74,6 +74,38 @@ npm run dev   # http://localhost:5173, proxies /applications, /companies, /stats
 
 Run the API (`uvicorn app.main:app --reload`) alongside it — the dev server proxies API paths to `http://127.0.0.1:8000` (see `frontend/vite.config.js`).
 
+## Gmail ingestion (Tier 2)
+
+Polls Gmail for ATS emails (Greenhouse/Lever/Workday sender patterns), classifies
+them with plain keyword rules (no ML), and queues actionable ones — rejections and
+interview requests — for you to confirm before anything touches `stage_events`.
+Nothing is ever written automatically.
+
+**One-time setup (you have to do this part — it's an interactive OAuth consent):**
+
+1. Create a project at [console.cloud.google.com](https://console.cloud.google.com), enable the Gmail API.
+2. APIs & Services > OAuth consent screen: choose "External," add yourself as a test user. No verification needed for personal use.
+3. APIs & Services > Credentials > Create Credentials > OAuth client ID > **Desktop app**. Note the client ID and secret.
+4. Run the one-time auth script locally:
+   ```bash
+   GMAIL_CLIENT_ID=<your-client-id> GMAIL_CLIENT_SECRET=<your-client-secret> \
+       ./venv/bin/python scripts/gmail_auth.py
+   ```
+   A browser opens; sign in and grant read-only Gmail access. The script prints a refresh token.
+5. Set all three as environment variables wherever the API and poller run: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`. Never commit them.
+
+**Running the poller:** `./venv/bin/python scripts/poll_gmail.py`, on a schedule (cron, Render cron, APScheduler) every 2-6 hours.
+
+**Review queue:** `GET /matches` lists pending matches; `POST /matches/{id}/confirm` (optionally `{"application_id": N}` to link an unmatched email) logs the real stage event; `POST /matches/{id}/dismiss` discards it.
+
+## Discord notifications (Tier 2)
+
+Set `DISCORD_WEBHOOK_URL` (a Discord channel's webhook URL) to get a message on every stage change — manual or confirmed-from-email. Unset by default; a Discord outage never fails the underlying request.
+
+## Spaced repetition (Tier 2)
+
+`POST /questions` to add an interview-prep question, `GET /questions/due` for today's queue, `POST /questions/{id}/review` with `{"quality": 0-5}` to grade yourself — standard SM-2, exactly as in `app/sm2.py`.
+
 ## Migrations
 
 Numbered plain SQL files in `db/migrations/` (`001_init.sql`, `002_...sql`), applied in order by `db/migrate.py`, which records each file in `schema_migrations` and skips ones already applied. Add a migration by dropping the next-numbered file in the directory and re-running the script. No Alembic — deliberately.
