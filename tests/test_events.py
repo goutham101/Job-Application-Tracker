@@ -47,3 +47,15 @@ def test_backfill_flag_allows_out_of_order(client, make_app):
 
     # Latest event by occurred_at is still the original 'applied' one.
     assert get_app(client, created["id"])["current_stage"] == "applied"
+
+
+def test_stage_event_triggers_discord_notify(client, make_app, monkeypatch):
+    from app import applications
+
+    calls = []
+    monkeypatch.setattr(applications, "notify", lambda msg: calls.append(msg))
+
+    created = make_app(company="Acme", role="SWE Intern")
+    client.post(f"/applications/{created['id']}/events", json={"stage": "oa"})
+
+    assert calls == ["Acme — SWE Intern moved to oa"]
