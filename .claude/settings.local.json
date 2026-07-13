@@ -1,7 +1,8 @@
 {
   "permissions": {
     "additionalDirectories": [
-      "/Users/gouthamrao/Documents/coding/Job App Tracker /tests"
+      "/Users/gouthamrao/Documents/coding/Job App Tracker /tests",
+      "/Users/gouthamrao/Documents/coding/Job App Tracker /app"
     ]
   }
 }

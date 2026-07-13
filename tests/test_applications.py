@@ -8,8 +8,6 @@ def test_create_application(client):
         "is_referral": False
     })
 
-    print(response.json())  # temporary, to see what's wrong
-
     assert response.status_code == 200
 
     data = response.json()
