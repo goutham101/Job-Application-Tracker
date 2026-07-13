@@ -56,6 +56,6 @@ def delete_application(application_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Application not found")
     
     db.delete(application)
-    db.commit
-    
+    db.commit()
+
     return None 
