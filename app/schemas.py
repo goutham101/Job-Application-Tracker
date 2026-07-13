@@ -1,8 +1,8 @@
 import enum
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Stage(str, enum.Enum):
@@ -97,3 +97,38 @@ class SourceStats(BaseModel):
     total: int
     responded: int
     response_rate: float
+
+
+class QuestionCreate(BaseModel):
+    prompt: str
+    source_application_id: Optional[int] = None
+
+
+class QuestionResponse(BaseModel):
+    id: int
+    prompt: str
+    source_application_id: Optional[int] = None
+    easiness: float
+    interval_days: int
+    repetitions: int
+    due_date: date
+
+
+class ReviewCreate(BaseModel):
+    quality: int = Field(ge=0, le=5)
+
+
+class EmailMatchResponse(BaseModel):
+    id: int
+    gmail_message_id: str
+    application_id: Optional[int] = None
+    suggested_stage: Stage
+    status: str
+    created_at: datetime
+    sender: str
+    subject: str
+    received_at: datetime
+
+
+class MatchConfirm(BaseModel):
+    application_id: Optional[int] = None

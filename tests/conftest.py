@@ -31,7 +31,8 @@ def _client(test_schema):
 def client(_client):
     with psycopg.connect(TEST_DATABASE_URL) as conn:
         conn.execute(
-            "TRUNCATE companies, applications, stage_events RESTART IDENTITY CASCADE"
+            "TRUNCATE companies, applications, stage_events, questions, reviews, "
+            "processed_emails, email_matches RESTART IDENTITY CASCADE"
         )
         conn.commit()
     return _client
