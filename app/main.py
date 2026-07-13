@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.applications import router as applications_router
 from app.db import pool
+from app.stats import router as stats_router
 
 
 @asynccontextmanager
@@ -15,3 +16,4 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Job Application Tracker", lifespan=lifespan)
 app.include_router(applications_router)
+app.include_router(stats_router)
