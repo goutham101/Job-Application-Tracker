@@ -1,47 +1,50 @@
+import os
+
+import psycopg
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-from app.main import app
-from app.database import Base, get_db
+TEST_DATABASE_URL = "postgresql://localhost/jobtracker_test"
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL  # must be set before app import
 
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from app.main import app  # noqa: E402
+from db.migrate import migrate  # noqa: E402
 
 
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@pytest.fixture(scope="session", autouse=True)
+def test_schema():
+    with psycopg.connect(TEST_DATABASE_URL) as conn:
+        conn.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        conn.commit()
+    migrate(TEST_DATABASE_URL)
 
 
-app.dependency_overrides[get_db] = override_get_db
+# Session-scoped: psycopg_pool cannot reopen a closed pool, so the app's
+# lifespan (which opens/closes it) must run exactly once for the whole run.
+@pytest.fixture(scope="session")
+def _client(test_schema):
+    with TestClient(app) as c:
+        yield c
 
 
-@pytest.fixture(scope="function")
-def client():
-    Base.metadata.create_all(bind=engine)
-    yield TestClient(app)
-    Base.metadata.drop_all(bind=engine)
-    
-@pytest.fixture(scope="function")
-def auth_client(client):
-    client.post("/register", json={
-        "email": "testuser@example.com",
-        "password": "testpassword123"
-    })
-    login_response = client.post("/login", json={
-        "email": "testuser@example.com",
-        "password": "testpassword123"
-    })
-    token = login_response.json()["access_token"]
+@pytest.fixture()
+def client(_client):
+    with psycopg.connect(TEST_DATABASE_URL) as conn:
+        conn.execute(
+            "TRUNCATE companies, applications, stage_events RESTART IDENTITY CASCADE"
+        )
+        conn.commit()
+    return _client
 
-    client.headers.update({"Authorization": f"Bearer {token}"})
-    return client
+
+@pytest.fixture()
+def make_app(client):
+    def _make(company="Acme", role="SWE Intern", source="cold_apply", applied_at=None, **extra):
+        body = {"company_name": company, "role_title": role, "source": source, **extra}
+        if applied_at is not None:
+            body["applied_at"] = applied_at
+        response = client.post("/applications", json=body)
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    return _make

@@ -1,74 +1,99 @@
+import enum
+from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel
-from datetime import date, datetime
-from typing import Optional, List
-from app.models import JobType, WorkMode, Source, Status
+
+
+class Stage(str, enum.Enum):
+    applied = "applied"
+    oa = "oa"
+    phone_screen = "phone_screen"
+    interview = "interview"
+    final_round = "final_round"
+    offer = "offer"
+    rejected = "rejected"
+    withdrawn = "withdrawn"
+
+
+class Source(str, enum.Enum):
+    cold_apply = "cold_apply"
+    referral = "referral"
+    career_fair = "career_fair"
+    recruiter = "recruiter"
+    other = "other"
+
+
+class CompanyCreate(BaseModel):
+    name: str
+    website: Optional[str] = None
+
+
+class CompanyResponse(BaseModel):
+    id: int
+    name: str
+    website: Optional[str] = None
+    created_at: datetime
 
 
 class ApplicationCreate(BaseModel):
-    company: str
-    role: str
+    company_name: str
+    company_website: Optional[str] = None
+    role_title: str
+    source: Source = Source.cold_apply
     job_url: Optional[str] = None
-    location: Optional[str] = None
-    job_type: JobType
-    work_mode: Optional[WorkMode] = None
-    date_applied: date
-    source: Source
-    is_referral: bool = False
-    referral_name: Optional[str] = None
-    resume_version: Optional[str] = None
-    next_follow_up_date: Optional[date] = None
     notes: Optional[str] = None
-
-class StatusUpdate(BaseModel):
-    current_status:  Status
-    
-class StatusHistoryResponse(BaseModel):
-    id: int
-    status: Status
-    changed_at: datetime
-    note: Optional[str] = None
-
-    class Config:
-        from_attributes = True  # use `orm_mode = True` instead if you're on Pydantic v1
+    applied_at: Optional[datetime] = None
 
 
 class ApplicationResponse(BaseModel):
     id: int
-    company: str
-    role: str
-    job_url: Optional[str] = None
-    location: Optional[str] = None
-    job_type: JobType
-    work_mode: Optional[WorkMode] = None
-    date_applied: date
+    company_id: int
+    company_name: str
+    role_title: str
     source: Source
-    is_referral: bool
-    referral_name: Optional[str] = None
-    resume_version: Optional[str] = None
-    current_status: Status
-    next_follow_up_date: Optional[date] = None
+    job_url: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
-    updated_at: datetime
-    history: List[StatusHistoryResponse] = []
-
-    class Config:
-        from_attributes = True
-        
-class UserCreate(BaseModel):
-    email: str
-    password: str
+    current_stage: Optional[Stage] = None
+    current_stage_at: Optional[datetime] = None
 
 
-class UserResponse(BaseModel):
+class StageEventCreate(BaseModel):
+    stage: Stage
+    occurred_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+class StageEventResponse(BaseModel):
     id: int
-    email: str
-    created_at: datetime
+    application_id: int
+    stage: Stage
+    occurred_at: datetime
+    notes: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+
+class StageCount(BaseModel):
+    stage: Stage
+    count: int
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class FunnelStage(BaseModel):
+    stage: Stage
+    reached: int
+    still_pending: int
+    conversion_to_next: Optional[float] = None
+
+
+class StageTransition(BaseModel):
+    from_stage: Stage
+    to_stage: Stage
+    transitions: int
+    avg_days: float
+
+
+class SourceStats(BaseModel):
+    source: Source
+    total: int
+    responded: int
+    response_rate: float

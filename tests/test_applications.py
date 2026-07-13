@@ -1,102 +1,52 @@
-def test_create_application(auth_client):
-    response = auth_client.post("/applications", json={
-        "company": "Google",
-        "role": "Software Engineering Intern",
-        "job_type": "internship",
-        "date_applied": "2026-07-12",
-        "source": "linkedin",
-        "is_referral": False
-    })
-
-    assert response.status_code == 200
-
+def test_create_application(client):
+    response = client.post(
+        "/applications",
+        json={"company_name": "Acme", "role_title": "SWE Intern"},
+    )
+    assert response.status_code == 201
     data = response.json()
-    assert data["company"] == "Google"
-    assert data["current_status"] == "applied"
-    assert len(data["history"]) == 1
-    assert data["history"][0]["status"] == "applied"
+    assert data["company_name"] == "Acme"
+    assert data["role_title"] == "SWE Intern"
+    assert data["source"] == "cold_apply"
+    assert data["current_stage"] == "applied"
+    assert data["current_stage_at"] is not None
 
 
-def test_list_applications(auth_client):
-    auth_client.post("/applications", json={
-        "company": "Google",
-        "role": "Software Engineering Intern",
-        "job_type": "internship",
-        "date_applied": "2026-07-12",
-        "source": "linkedin",
-        "is_referral": False
-    })
-    auth_client.post("/applications", json={
-        "company": "Stripe",
-        "role": "Backend Intern",
-        "job_type": "internship",
-        "date_applied": "2026-07-12",
-        "source": "company_site",
-        "is_referral": False
-    })
+def test_company_get_or_create(client, make_app):
+    first = make_app(company="Acme", role="SWE Intern")
+    second = make_app(company="Acme", role="Data Intern")
+    assert first["company_id"] == second["company_id"]
 
-    response = auth_client.get("/applications")
-
-    assert response.status_code == 200
-
-    data = response.json()
-    assert len(data) == 2
-    companies = [app["company"] for app in data]
-    assert "Google" in companies
-    assert "Stripe" in companies
+    r1 = client.post("/companies", json={"name": "Globex"})
+    r2 = client.post("/companies", json={"name": "Globex"})
+    assert r1.status_code == 201 and r2.status_code == 201
+    assert r1.json()["id"] == r2.json()["id"]
 
 
-def test_update_status(auth_client):
-    created = auth_client.post("/applications", json={
-        "company": "Google",
-        "role": "Software Engineering Intern",
-        "job_type": "internship",
-        "date_applied": "2026-07-12",
-        "source": "linkedin",
-        "is_referral": False
-    }).json()
-
-    response = auth_client.patch(f"/applications/{created['id']}", json={
-        "current_status": "interviewing"
-    })
-
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["current_status"] == "interviewing"
-    assert len(data["history"]) == 2
-    assert data["history"][0]["status"] == "applied"
-    assert data["history"][1]["status"] == "interviewing"
+def test_create_application_invalid_source(client):
+    response = client.post(
+        "/applications",
+        json={"company_name": "Acme", "role_title": "SWE", "source": "spam"},
+    )
+    assert response.status_code == 422
 
 
-def test_update_status_not_found(auth_client):
-    response = auth_client.patch("/applications/9999", json={
-        "current_status": "interviewing"
-    })
+def test_applied_at_override(make_app):
+    from datetime import datetime
 
-    assert response.status_code == 404
+    data = make_app(applied_at="2026-07-01T09:00:00Z")
+    assert datetime.fromisoformat(data["current_stage_at"]) == datetime.fromisoformat(
+        "2026-07-01T09:00:00+00:00"
+    )
 
 
-def test_delete_application(auth_client):
-    created = auth_client.post("/applications", json={
-        "company": "Google",
-        "role": "Software Engineering Intern",
-        "job_type": "internship",
-        "date_applied": "2026-07-12",
-        "source": "linkedin",
-        "is_referral": False
-    }).json()
-
-    response = auth_client.delete(f"/applications/{created['id']}")
-
+def test_delete_application(client, make_app):
+    created = make_app()
+    response = client.delete(f"/applications/{created['id']}")
     assert response.status_code == 204
 
-    remaining = auth_client.get("/applications").json()
-    remaining_ids = [app["id"] for app in remaining]
-    assert created["id"] not in remaining_ids
+    listing = client.get("/applications")
+    assert all(a["id"] != created["id"] for a in listing.json())
 
-
-def test_delete_application_not_found(auth_client):
-    response = auth_client.delete("/applications/9999")
-
+    response = client.delete(f"/applications/{created['id']}")
     assert response.status_code == 404
