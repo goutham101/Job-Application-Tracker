@@ -11,6 +11,8 @@ export default defineConfig({
       "/applications": API,
       "/companies": API,
       "/stats": API,
+      "/matches": API,
+      "/questions": API,
     },
   },
 });

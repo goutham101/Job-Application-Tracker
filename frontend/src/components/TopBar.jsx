@@ -1,4 +1,4 @@
-import { Briefcase, Rows, ChartBar } from "@phosphor-icons/react";
+import { Briefcase, Rows, ChartBar, EnvelopeSimple } from "@phosphor-icons/react";
 
 export default function TopBar({ route }) {
   return (
@@ -24,6 +24,13 @@ export default function TopBar({ route }) {
             aria-current={route === "analytics" ? "page" : undefined}
           >
             <ChartBar size={16} aria-hidden /> Analytics
+          </a>
+          <a
+            href="#/matches"
+            className={route === "matches" ? "active" : ""}
+            aria-current={route === "matches" ? "page" : undefined}
+          >
+            <EnvelopeSimple size={16} aria-hidden /> Review Queue
           </a>
         </nav>
         <div className="topbar-spacer" />

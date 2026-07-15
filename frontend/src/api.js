@@ -36,4 +36,11 @@ export const api = {
   timeInStage: () => request("/stats/time-in-stage"),
   bySource: () => request("/stats/by-source"),
   byStage: () => request("/stats/by-stage"),
+  listMatches: () => request("/matches"),
+  confirmMatch: (id, applicationId = null) =>
+    request(`/matches/${id}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ application_id: applicationId }),
+    }),
+  dismissMatch: (id) => request(`/matches/${id}/dismiss`, { method: "POST" }),
 };
