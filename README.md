@@ -81,18 +81,11 @@ them with plain keyword rules (no ML), and queues actionable ones — rejections
 interview requests — for you to confirm before anything touches `stage_events`.
 Nothing is ever written automatically.
 
-**One-time setup (you have to do this part — it's an interactive OAuth consent):**
+**One-time setup — IMAP with an App Password, no Google Cloud project, no OAuth, no billing account anywhere near it:**
 
-1. Create a project at [console.cloud.google.com](https://console.cloud.google.com), enable the Gmail API.
-2. APIs & Services > OAuth consent screen: choose "External," add yourself as a test user. No verification needed for personal use.
-3. APIs & Services > Credentials > Create Credentials > OAuth client ID > **Desktop app**. Note the client ID and secret.
-4. Run the one-time auth script locally:
-   ```bash
-   GMAIL_CLIENT_ID=<your-client-id> GMAIL_CLIENT_SECRET=<your-client-secret> \
-       ./venv/bin/python scripts/gmail_auth.py
-   ```
-   A browser opens; sign in and grant read-only Gmail access. The script prints a refresh token.
-5. Set all three as environment variables wherever the API and poller run: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`. Never commit them.
+1. Turn on 2-Step Verification on your Google account, if it isn't already: [myaccount.google.com/security](https://myaccount.google.com/security)
+2. Generate an App Password: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) — app "Mail", generate, copy the 16-character password.
+3. Set two environment variables wherever the poller runs: `GMAIL_ADDRESS` (your Gmail address) and `GMAIL_APP_PASSWORD` (the password from step 2). Never commit them.
 
 **Running the poller:** `./venv/bin/python scripts/poll_gmail.py`, on a schedule (cron, Render cron, APScheduler) every 2-6 hours.
 
