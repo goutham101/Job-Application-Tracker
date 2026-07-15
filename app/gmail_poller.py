@@ -1,8 +1,5 @@
 from app.gmail_classify import classify_email, match_company
-
-DEFAULT_QUERY = (
-    "newer_than:14d from:(no-reply@greenhouse.io OR *@lever.co OR *@myworkday.com)"
-)
+from app.gmail_client import DEFAULT_QUERY
 
 ACTIONABLE_STAGES = {"rejection": "rejected", "interview": "interview"}
 
