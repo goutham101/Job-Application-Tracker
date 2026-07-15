@@ -8,6 +8,13 @@ Generate an App Password at myaccount.google.com/apppasswords — no Google
 Cloud project needed.
 """
 
+import sys
+from pathlib import Path
+
+# Running this file directly only puts scripts/ on sys.path, not the repo
+# root — add it so `app.*` imports resolve regardless of invocation method.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import psycopg
 from psycopg.rows import dict_row
 
