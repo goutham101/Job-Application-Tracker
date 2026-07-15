@@ -99,10 +99,6 @@ That's it — no server of your own needs to stay running for polling to happen.
 
 **Review queue:** in the dashboard, the **Review Queue** tab lists pending matches, lets you confirm (linking to an application first if the sender didn't auto-match) or dismiss each one. Same thing via the API directly: `GET /matches`, `POST /matches/{id}/confirm` (optionally `{"application_id": N}`), `POST /matches/{id}/dismiss`.
 
-## Discord notifications (Tier 2)
-
-Set `DISCORD_WEBHOOK_URL` (a Discord channel's webhook URL) to get a message on every stage change — manual or confirmed-from-email. Unset by default; a Discord outage never fails the underlying request.
-
 ## Spaced repetition (Tier 2)
 
 `POST /questions` to add an interview-prep question, `GET /questions/due` for today's queue, `POST /questions/{id}/review` with `{"quality": 0-5}` to grade yourself — standard SM-2, exactly as in `app/sm2.py`.
@@ -133,7 +129,7 @@ Two Render services from this one repo — a Python web service for the API, a s
 2. New > Web Service. Root directory: leave as repo root.
 3. Build command: `pip install -r requirements.txt`
 4. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Environment variables: `DATABASE_URL` (the Neon string from step 1). Optional: `DISCORD_WEBHOOK_URL`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `FRONTEND_ORIGIN` (see step 3).
+5. Environment variables: `DATABASE_URL` (the Neon string from step 1). Optional: `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD`, `FRONTEND_ORIGIN` (see step 3).
 6. Deploy. Render gives you a URL like `https://job-tracker-api-xxxx.onrender.com` — copy it.
 
 **3. Render — frontend (static site):**
