@@ -4,10 +4,12 @@ import { api } from "./api.js";
 import TopBar from "./components/TopBar.jsx";
 import ApplicationsView from "./components/ApplicationsView.jsx";
 import AnalyticsView from "./components/AnalyticsView.jsx";
+import MatchesView from "./components/MatchesView.jsx";
+
+const ROUTES = { "#/analytics": "analytics", "#/matches": "matches" };
 
 function useHashRoute() {
-  const read = () =>
-    window.location.hash === "#/analytics" ? "analytics" : "applications";
+  const read = () => ROUTES[window.location.hash] ?? "applications";
   const [route, setRoute] = useState(read);
   useEffect(() => {
     const onChange = () => setRoute(read());
@@ -49,16 +51,16 @@ export default function App() {
   return (
     <>
       <TopBar route={route} />
-      {route === "applications" ? (
+      {route === "applications" && (
         <ApplicationsView
           apps={apps}
           loadError={loadError}
           reload={reload}
           notify={notify}
         />
-      ) : (
-        <AnalyticsView apps={apps} />
       )}
+      {route === "analytics" && <AnalyticsView apps={apps} />}
+      {route === "matches" && <MatchesView notify={notify} />}
       {toast && (
         <div className={`toast ${toast.kind === "error" ? "error" : ""}`} role="status">
           {toast.kind === "error" ? (

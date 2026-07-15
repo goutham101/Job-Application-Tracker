@@ -87,9 +87,17 @@ Nothing is ever written automatically.
 2. Generate an App Password: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) — app "Mail", generate, copy the 16-character password.
 3. Set two environment variables wherever the poller runs: `GMAIL_ADDRESS` (your Gmail address) and `GMAIL_APP_PASSWORD` (the password from step 2). Never commit them.
 
-**Running the poller:** `./venv/bin/python scripts/poll_gmail.py`, on a schedule (cron, Render cron, APScheduler) every 2-6 hours.
+**Running the poller automatically — free, via GitHub Actions:** `.github/workflows/poll-gmail.yml` runs it every 4 hours (plus a manual "Run workflow" button on the Actions tab). Add three repo secrets — Settings → Secrets and variables → Actions → New repository secret:
 
-**Review queue:** `GET /matches` lists pending matches; `POST /matches/{id}/confirm` (optionally `{"application_id": N}` to link an unmatched email) logs the real stage event; `POST /matches/{id}/dismiss` discards it.
+| Secret | Value |
+|---|---|
+| `DATABASE_URL` | your Neon connection string |
+| `GMAIL_ADDRESS` | your Gmail address |
+| `GMAIL_APP_PASSWORD` | the App Password from step 2 above |
+
+That's it — no server of your own needs to stay running for polling to happen. You can also run it manually any time: `./venv/bin/python scripts/poll_gmail.py`.
+
+**Review queue:** in the dashboard, the **Review Queue** tab lists pending matches, lets you confirm (linking to an application first if the sender didn't auto-match) or dismiss each one. Same thing via the API directly: `GET /matches`, `POST /matches/{id}/confirm` (optionally `{"application_id": N}`), `POST /matches/{id}/dismiss`.
 
 ## Discord notifications (Tier 2)
 
