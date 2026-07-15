@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from psycopg import Connection
 
 from app.db import get_conn
-from app.discord_notify import notify
 from app.schemas import (
     ApplicationCreate,
     ApplicationResponse,
@@ -40,7 +39,7 @@ LIST_APPLICATIONS = """
 
 
 def insert_stage_event(conn, application_id: int, stage: str, occurred_at=None, notes=None):
-    row = conn.execute(
+    return conn.execute(
         """
         INSERT INTO stage_events (application_id, stage, occurred_at, notes)
         VALUES (%s, %s, COALESCE(%s, now()), %s)
@@ -48,18 +47,6 @@ def insert_stage_event(conn, application_id: int, stage: str, occurred_at=None, 
         """,
         (application_id, stage, occurred_at, notes),
     ).fetchone()
-
-    app_info = conn.execute(
-        """
-        SELECT a.role_title, c.name AS company_name
-        FROM applications a JOIN companies c ON c.id = a.company_id
-        WHERE a.id = %s
-        """,
-        (application_id,),
-    ).fetchone()
-    notify(f"{app_info['company_name']} — {app_info['role_title']} moved to {stage}")
-
-    return row
 
 
 @router.post("/companies", response_model=CompanyResponse, status_code=201)
