@@ -117,3 +117,31 @@ Numbered plain SQL files in `db/migrations/` (`001_init.sql`, `002_...sql`), app
 ```
 
 Runs against `jobtracker_test` (schema rebuilt per session, tables truncated per test). The funnel/time-in-stage tests assert exact numbers from a hand-verified six-application fixture — see `tests/test_stats.py`.
+
+## Deploying (Render + Neon, both free)
+
+Two Render services from this one repo — a Python web service for the API, a static site for the frontend — plus a Neon Postgres database. No credit card required for either.
+
+**1. Neon (database):**
+1. Sign up at [neon.tech](https://neon.tech), create a project.
+2. Copy the connection string it gives you (starts `postgresql://...`, includes `?sslmode=require`).
+3. Run migrations against it once, from your machine: `DATABASE_URL="<neon-connection-string>" ./venv/bin/python db/migrate.py`.
+
+**2. Render — API (web service):**
+1. Sign up at [render.com](https://render.com), connect your GitHub account, select this repo.
+2. New > Web Service. Root directory: leave as repo root.
+3. Build command: `pip install -r requirements.txt`
+4. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Environment variables: `DATABASE_URL` (the Neon string from step 1). Optional: `DISCORD_WEBHOOK_URL`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `FRONTEND_ORIGIN` (see step 3).
+6. Deploy. Render gives you a URL like `https://job-tracker-api-xxxx.onrender.com` — copy it.
+
+**3. Render — frontend (static site):**
+1. New > Static Site, same repo.
+2. Root directory: `frontend`
+3. Build command: `npm install && npm run build`
+4. Publish directory: `dist`
+5. Environment variable: `VITE_API_URL` set to the API URL from step 2 (no trailing slash) — Vite bakes this into the build, so set it *before* the first deploy.
+6. Deploy. You'll get a second URL, e.g. `https://job-tracker-xxxx.onrender.com` — that's the site you actually visit.
+7. Optional but recommended: go back to the API service's env vars and set `FRONTEND_ORIGIN` to this frontend URL, then redeploy the API — this locks CORS down to just your frontend instead of allowing any origin.
+
+**Free-tier note:** Render's free web service sleeps after 15 minutes idle; the first request after that takes ~30 seconds to wake up. Fine for a personal tracker, not for a demo you're timing.

@@ -1,5 +1,10 @@
+// Empty by default so the Vite dev proxy (see vite.config.js) still handles
+// local dev unchanged. In production, set VITE_API_URL to the deployed API's
+// origin at build time — Vite bakes it into the bundle.
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
+
 async function request(path, options = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: options.body ? { "Content-Type": "application/json" } : undefined,
   });
