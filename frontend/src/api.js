@@ -3,11 +3,18 @@
 // origin at build time — Vite bakes it into the bundle.
 const API_BASE = import.meta.env.VITE_API_URL ?? "";
 
+// Entered once by the user (see App.jsx's key gate) and cached in
+// localStorage; only required when the API is deployed with API_KEY set.
+const API_KEY_STORAGE = "apiKey";
+export const getApiKey = () => localStorage.getItem(API_KEY_STORAGE) ?? "";
+export const setApiKey = (key) => localStorage.setItem(API_KEY_STORAGE, key);
+
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: options.body ? { "Content-Type": "application/json" } : undefined,
-  });
+  const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}) };
+  const apiKey = getApiKey();
+  if (apiKey) headers["X-API-Key"] = apiKey;
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
   if (!res.ok) {

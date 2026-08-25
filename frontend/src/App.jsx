@@ -1,12 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle, WarningCircle } from "@phosphor-icons/react";
-import { api } from "./api.js";
+import { api, setApiKey } from "./api.js";
 import TopBar from "./components/TopBar.jsx";
 import ApplicationsView from "./components/ApplicationsView.jsx";
 import AnalyticsView from "./components/AnalyticsView.jsx";
 import MatchesView from "./components/MatchesView.jsx";
 
 const ROUTES = { "#/analytics": "analytics", "#/matches": "matches" };
+
+function KeyGate({ onSubmit }) {
+  const [value, setValue] = useState("");
+  return (
+    <form
+      className="key-gate"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(value.trim());
+      }}
+    >
+      <h1>Enter access key</h1>
+      <input
+        type="password"
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="API key"
+      />
+      <button type="submit">Continue</button>
+    </form>
+  );
+}
 
 function useHashRoute() {
   const read = () => ROUTES[window.location.hash] ?? "applications";
@@ -24,6 +47,7 @@ export default function App() {
   const [apps, setApps] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [toast, setToast] = useState(null);
+  const [needsKey, setNeedsKey] = useState(false);
 
   const notify = useCallback((message, kind = "ok") => {
     setToast({ message, kind });
@@ -40,13 +64,29 @@ export default function App() {
       setLoadError(null);
       setApps(await api.listApplications());
     } catch (err) {
-      setLoadError(err.message);
+      if (err.status === 401) {
+        setNeedsKey(true);
+      } else {
+        setLoadError(err.message);
+      }
     }
   }, []);
 
   useEffect(() => {
     reload();
   }, [reload]);
+
+  if (needsKey) {
+    return (
+      <KeyGate
+        onSubmit={(key) => {
+          setApiKey(key);
+          setNeedsKey(false);
+          reload();
+        }}
+      />
+    );
+  }
 
   return (
     <>

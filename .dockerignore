@@ -1,0 +1,13 @@
+.git
+venv/
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.claude/
+docs/
+*.docx
+job-tracker-build-plan.md
+README.md

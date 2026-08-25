@@ -1,0 +1,82 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jobtracker
+      POSTGRES_PASSWORD: jobtracker
+      POSTGRES_DB: jobtracker
+    ports:
+      - "127.0.0.1:5433:5432"   # 5432 is taken by local Postgres.app; connect on 5433 from the host
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobtracker"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      target: dev
+    command: python db/migrate.py
+    environment:
+      DATABASE_URL: postgresql://jobtracker:jobtracker@db:5432/jobtracker
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://jobtracker:jobtracker@db:5432/jobtracker
+      API_KEY: ${API_KEY:-}
+      FRONTEND_ORIGIN: http://localhost:5173
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    ports:
+      - "5173:5173"
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+  # Runs the Gmail poller once and exits; not part of `docker compose up`.
+  # Usage: docker compose run --rm poller
+  poller:
+    build:
+      context: .
+      target: dev
+    command: python scripts/poll_gmail.py
+    environment:
+      DATABASE_URL: postgresql://jobtracker:jobtracker@db:5432/jobtracker
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["poller"]
+
+volumes:
+  pgdata:

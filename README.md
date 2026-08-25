@@ -67,6 +67,20 @@ python -m venv venv && ./venv/bin/pip install -r requirements.txt
 
 One env var to configure: `DATABASE_URL` (defaults to `postgresql://localhost/jobtracker`).
 
+### Or with Docker
+
+Runs Postgres, migrations, the API, and the Vite dev server together, no local Postgres or venv needed:
+
+```bash
+docker compose up --build
+# API:      http://localhost:8000/docs
+# Frontend: http://localhost:5173
+```
+
+Migrations run once via a `migrate` service before `api` starts. Source is bind-mounted, so both `uvicorn --reload` and Vite's dev server pick up edits live. If you already run Postgres.app locally on 5432, the containerized Postgres is exposed on the host as `5433` instead so both can run side by side.
+
+Gmail polling isn't part of the default stack (it's a one-shot script, not a server) — run it on demand with `docker compose run --rm poller`, after setting `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` in a `.env` file (see `.env.example`). `API_KEY` also comes from `.env` if you want auth on locally.
+
 ### Frontend
 
 Vite + React dashboard in `frontend/`. An applications table (filters, search, add/delete, stage-event logging with backfill support), an analytics page (funnel, time-in-stage, response-by-source, current-stage-mix, each chart with an accessible table fallback), and a review queue for Gmail matches. No routing library, just a `location.hash` listener switching views.
@@ -131,7 +145,7 @@ Two Render services off this one repo: a Python web service for the API, a stati
 2. New > Web Service. Root directory: repo root.
 3. Build command: `pip install -r requirements.txt`
 4. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Environment variables: `DATABASE_URL` (from step 1). Optional: `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD`, `FRONTEND_ORIGIN` (see step 3).
+5. Environment variables: `DATABASE_URL` (from step 1), and `API_KEY` — a long random string (`openssl rand -hex 32`), **required** before this goes anywhere public. Without it every route (list/create/delete applications, matches, questions) is open to anyone with the URL — see `app/auth.py`. Optional: `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD`, `FRONTEND_ORIGIN` (see step 3).
 6. Deploy. You'll get a URL like `https://job-tracker-api-xxxx.onrender.com`. Hang onto it.
 
 **3. Render, frontend (static site):**
@@ -140,5 +154,5 @@ Two Render services off this one repo: a Python web service for the API, a stati
 3. Build command: `npm install && npm run build`
 4. Publish directory: `dist`
 5. Environment variable: `VITE_API_URL` set to the API URL from step 2, no trailing slash. Vite bakes this in at build time, so it has to be set before the first deploy, not after.
-6. Deploy. This second URL is the actual site you visit.
+6. Deploy. This second URL is the actual site you visit — it'll prompt for the `API_KEY` value from step 2 on first load and remember it in the browser (localStorage).
 7. Worth doing: go back to the API service, set `FRONTEND_ORIGIN` to this frontend URL, redeploy. Locks CORS down to just your frontend instead of allowing any origin.
